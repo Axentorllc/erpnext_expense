@@ -227,3 +227,11 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+# Accounting Dimensions
+# ---------------------
+# Add doctypes that should support accounting dimensions
+accounting_dimension_doctypes = [
+	"Expense Entry",
+	"Expense Entry Detail",
+]
+

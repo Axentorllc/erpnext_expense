@@ -11,6 +11,9 @@ from frappe.utils import get_link_to_form
 import erpnext
 from erpnext.accounts.general_ledger import make_gl_entries, make_reverse_gl_entries
 from erpnext.controllers.accounts_controller import AccountsController
+from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
+	get_accounting_dimensions,
+)
 
 class ExpenseEntry(Document):
 	get_gl_dict = AccountsController.get_gl_dict
@@ -22,6 +25,7 @@ class ExpenseEntry(Document):
 
 	def validate(self):
 		self.calculate_totals()
+		self.validate_company_in_accounting_dimension()
 	
 	def calculate_totals(self):
 		self.total_expense = 0
@@ -43,6 +47,7 @@ class ExpenseEntry(Document):
 		gl_entries = []
 
 		for account in self.accounts:
+			# Pass account item to get_gl_dict so it can pick up accounting dimensions from child table
 			gl_entries.append(
 				self.get_gl_dict(
 					{
@@ -52,9 +57,11 @@ class ExpenseEntry(Document):
 						"cost_center": account.cost_center,
 						"remarks": account.notes,
 					},
+					item=account,
 				)
 			)
 
+		# Payment account entry uses dimensions from parent (self)
 		gl_entries.append(
 			self.get_gl_dict(
 				{
@@ -77,6 +84,66 @@ class ExpenseEntry(Document):
 					account, (" " + _("or") + " ").join(valid_currency)
 				)
 			)
+
+	def validate_company_in_accounting_dimension(self):
+		"""Validate that accounting dimensions belong to the selected company"""
+		if not self.company:
+			return
+
+		from frappe.query_builder import DocType
+
+		doc_field = DocType("DocField")
+		accounting_dimension = DocType("Accounting Dimension")
+		dimension_list = (
+			frappe.qb.from_(accounting_dimension)
+			.select(accounting_dimension.document_type)
+			.join(doc_field)
+			.on(doc_field.parent == accounting_dimension.document_type)
+			.where(doc_field.fieldname == "company")
+		).run(as_list=True)
+
+		dimension_list = sum(dimension_list, ["Project", "Cost Center"])
+		accounting_dimensions = get_accounting_dimensions()
+
+		# Validate parent document dimensions
+		for dimension in accounting_dimensions:
+			if self.get(dimension):
+				dimension_doctype = frappe.db.get_value(
+					"Accounting Dimension", {"fieldname": dimension}, "document_type"
+				)
+				if dimension_doctype in dimension_list:
+					dimension_company = frappe.db.get_value(
+						dimension_doctype, self.get(dimension), "company"
+					)
+					if dimension_company and dimension_company != self.company:
+						frappe.throw(
+							_("{0} {1} does not belong to company {2}").format(
+								frappe.get_meta(dimension_doctype).get_label(),
+								frappe.bold(self.get(dimension)),
+								frappe.bold(self.company),
+							)
+						)
+
+		# Validate child table dimensions
+		for account in self.accounts:
+			for dimension in accounting_dimensions:
+				if account.get(dimension):
+					dimension_doctype = frappe.db.get_value(
+						"Accounting Dimension", {"fieldname": dimension}, "document_type"
+					)
+					if dimension_doctype in dimension_list:
+						dimension_company = frappe.db.get_value(
+							dimension_doctype, account.get(dimension), "company"
+						)
+						if dimension_company and dimension_company != self.company:
+							frappe.throw(
+								_("{0} {1} in row {2} does not belong to company {3}").format(
+									frappe.get_meta(dimension_doctype).get_label(),
+									frappe.bold(account.get(dimension)),
+									account.idx,
+									frappe.bold(self.company),
+								)
+							)
 
 @frappe.whitelist()
 def get_expense_type_account_and_cost_center(expense_type, company):

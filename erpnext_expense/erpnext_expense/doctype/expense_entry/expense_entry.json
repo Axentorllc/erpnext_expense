@@ -8,22 +8,21 @@
  "field_order": [
   "section_break_pkm0",
   "naming_series",
-  "amended_from",
-  "column_break_xzkb",
   "posting_date",
   "column_break_jtiv",
   "company",
   "company_currency",
+  "amended_from",
   "paid_through_section",
   "mode_of_payment",
-  "column_break_ockd",
   "mode_of_payment_account",
+  "column_break_ockd",
   "expenses_section",
   "accounts",
+  "total_expense",
   "section_break_haho",
   "remarks",
-  "column_break_iobq",
-  "total_expense"
+  "column_break_iobq"
  ],
  "fields": [
   {
@@ -39,10 +38,6 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "column_break_xzkb",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "company",
@@ -114,13 +109,13 @@
   {
    "fieldname": "posting_date",
    "fieldtype": "Date",
-   "label": "Date"
+   "label": "Posting Date"
   },
   {
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "EXP.#####"
+   "options": "EXP-ENT-.#####"
   },
   {
    "fieldname": "column_break_jtiv",
@@ -130,7 +125,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-02-08 20:55:18.844357",
+ "modified": "2026-01-06 23:29:57.020096",
  "modified_by": "Administrator",
  "module": "ERPNext Expense",
  "name": "Expense Entry",
@@ -151,6 +146,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
